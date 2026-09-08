@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 from PIL import Image
 import io
@@ -248,7 +249,7 @@ def render_escaner():
     mensajes_actuales = st.session_state.chats_guardados[st.session_state.chat_actual]
     evidencia_actual = st.session_state.evidencias_guardadas.get(st.session_state.chat_actual)
 
-    st.markdown("<h1 style='text-align:center; font-size: 2.5rem; margin-bottom: 0;'>REFLEX IA</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align:center; font-size: 2.5rem; margin-bottom: 0;'>REFLEX AI</h1>", unsafe_allow_html=True)
     st.markdown("<p style='text-align:center; color: #888; margin-top: 5px;'>Sistema avanzado de diagnóstico y optimización.</p>", unsafe_allow_html=True)
     st.markdown("---")
 
@@ -312,8 +313,8 @@ def render_escaner():
             with st.chat_message("assistant", avatar=avatar_ia):
                 with st.spinner("Anulando filtros de seguridad de Google..."):
                     try:
-                        # ---> INYECTA TU LLAVE AQUÍ <---
-                        GEMINI_KEY = st.secrets["GEMINI_KEY"]
+                        # ---> EXTRACCIÓN BLINDADA Y CENSURA ANULADA <---
+                        GEMINI_KEY = os.environ.get("GEMINI_KEY") or st.secrets["GEMINI_KEY"]
                         
                         modelo_absoluto = "gemini-3.6-flash"
                         url_gen = f"https://generativelanguage.googleapis.com/v1beta/models/{modelo_absoluto}:generateContent?key={GEMINI_KEY}"
