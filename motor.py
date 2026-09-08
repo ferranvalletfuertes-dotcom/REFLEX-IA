@@ -1,17 +1,16 @@
+import os
 import streamlit as st
 from supabase import create_client
 import google.generativeai as genai
 
 def inicializar_estados():
     if 'supabase' not in st.session_state:
-        # Variables en minúscula
-        url = st.secrets["SUPABASE_URL"]
-        key = st.secrets["SUPABASE_KEY"]
-        # Invocación exacta en minúscula (sin duplicar)
+        url = os.environ.get("SUPABASE_URL") or st.secrets["SUPABASE_URL"]
+        key = os.environ.get("SUPABASE_KEY") or st.secrets["SUPABASE_KEY"]
         st.session_state.supabase = create_client(url, key)
 
     if 'gemini_configurado' not in st.session_state:
-        GEMINI_KEY = st.secrets["GEMINI_KEY"]
+        GEMINI_KEY = os.environ.get("GEMINI_KEY") or st.secrets["GEMINI_KEY"]
         genai.configure(api_key=GEMINI_KEY)
         st.session_state.gemini_configurado = True
 
