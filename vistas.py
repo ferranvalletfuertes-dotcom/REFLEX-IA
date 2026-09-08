@@ -8,6 +8,7 @@ import json
 import re
 import requests
 import time
+from gtts import gTTS
 
 # ==========================================
 # 1. LANDING PAGE Y ACCESO (EMAIL / CONTRASEÑA)
@@ -105,18 +106,6 @@ def render_login():
 
     st.markdown("""
     <div class="landing-container">
-        <div class="scroll-card">
-            <div class="card-title">🧠 Notas del Creador</div>
-            <div class="creator-note">
-                "Construí esto porque estaba harto de las inteligencias artificiales hipócritas que te aplauden los fracasos. REFLEX AI está programada para decirte la verdad cruda, medir tu rendimiento con métricas ELO reales y obligarte a ejecutar soluciones sin rodeos."
-            </div>
-            <p style="color: #888; font-size: 0.9rem; text-align: right;">— Arquitecto de REFLEX AI</p>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown("""
-    <div class="landing-container">
         <div class="scroll-card" style="border-color: rgba(255,255,255,0.2); text-align: center;">
             <div class="card-title" style="color: white;">🚀 Acceso a la Matriz</div>
             <p style="color: #aaa; margin-bottom: 2rem;">Inicia sesión con tu cuenta o crea una nueva identidad para comenzar.</p>
@@ -159,15 +148,12 @@ def cargar_db():
         try:
             resp = st.session_state.supabase.table("chats_memoria").select("*").eq("usuario_id", st.session_state.usuario_id).execute()
             
-            # Filtro implacable: Separar chats reales de la basura
             chats_utiles = []
             for fila in resp.data:
-                # Si el chat tiene historial real, se queda. Si está vacío, se purga.
                 if fila.get('mensajes') and len(fila['mensajes']) > 0:
                     chats_utiles.append(fila)
                 else:
                     try:
-                        # Ejecución de purga en base de datos
                         st.session_state.supabase.table("chats_memoria").delete().eq("id", fila['id']).execute()
                     except:
                         pass
@@ -178,25 +164,31 @@ def cargar_db():
             
             st.session_state.chat_actual = chats_utiles[0]['id'] if chats_utiles else "default"
             
-            # Si no hay chats útiles, creamos la estructura base temporal, sin enviarla a la DB
             if not chats_utiles:
                 st.session_state.chats_guardados["default"] = []
-                st.session_state.chat_meta["default"] = {"rol": "un juez implacable", "brutalidad": 7}
+                st.session_state.chat_meta["default"] = {"rol": "un juez implacable", "brutalidad": 7, "privacidad": False}
                 st.session_state.evidencias_guardadas["default"] = None
                 
         except Exception as e:
             st.error(f"Fallo al conectar con la bóveda de datos: {e}")
         st.session_state.db_cargada = True
+        
+    # Inicializar preferencia de privacidad si no existe en sesión
+    if "compartir_datos" not in st.session_state:
+        st.session_state.compartir_datos = False
 
 def sincronizar_db(chat_id):
     if chat_id != "default":
         mensajes_actuales = st.session_state.chats_guardados.get(chat_id, [])
-        # REGLA ORO: Solo tocamos la base de datos si el chat tiene información real
         if len(mensajes_actuales) > 0:
+            # Inyectamos la preferencia de privacidad en los metadatos del chat
+            meta_actualizada = st.session_state.chat_meta[chat_id].copy()
+            meta_actualizada["privacidad_compartida"] = st.session_state.compartir_datos
+            
             datos = {
                 "id": chat_id,
                 "usuario_id": st.session_state.usuario_id,
-                "meta": st.session_state.chat_meta[chat_id],
+                "meta": meta_actualizada,
                 "mensajes": mensajes_actuales
             }
             try:
@@ -206,13 +198,10 @@ def sincronizar_db(chat_id):
 
 def borrar_chat(chat_id):
     try:
-        # Intento de borrado definitivo en Supabase
         st.session_state.supabase.table("chats_memoria").delete().eq("id", chat_id).eq("usuario_id", st.session_state.usuario_id).execute()
     except Exception as e:
         st.error(f"Fallo de Supabase: {e}")
-        st.warning("⚠️ Si los chats reaparecen al recargar, ve a tu panel de Supabase > Authentication > Policies (o RLS de tu tabla) y asegúrate de añadir una regla que te permita hacer 'DELETE'.")
     
-    # Limpieza inmediata de la memoria caché visual
     if chat_id in st.session_state.chats_guardados:
         del st.session_state.chats_guardados[chat_id]
     if chat_id in st.session_state.chat_meta:
@@ -225,7 +214,7 @@ def borrar_chat(chat_id):
     
     if not chats_restantes:
         st.session_state.chats_guardados["default"] = []
-        st.session_state.chat_meta["default"] = {"rol": "un juez implacable", "brutalidad": 7}
+        st.session_state.chat_meta["default"] = {"rol": "un juez implacable", "brutalidad": 7, "privacidad": False}
         st.session_state.evidencias_guardadas["default"] = None
         
     st.rerun()
@@ -250,6 +239,19 @@ def render_escaner():
     """, unsafe_allow_html=True)
 
     with st.sidebar:
+        # Menú de Ajustes y Privacidad
+        with st.expander("⚙️ Ajustes y Privacidad"):
+            st.session_state.compartir_datos = st.checkbox(
+                "Permitir compartir conversaciones con el creador para mejorar el modelo.",
+                value=st.session_state.compartir_datos,
+                help="Si activas esto, ayudas a entrenar a REFLEX AI. Si lo desactivas, tu sesión es estrictamente confidencial."
+            )
+            st.markdown("---")
+            if st.button("🚪 Cerrar Sesión", use_container_width=True):
+                st.session_state.supabase.auth.sign_out()
+                st.session_state.clear()
+                st.rerun()
+
         st.markdown("### Memoria de Sesiones")
         if st.button("➕ Iniciar Nuevo Análisis", use_container_width=True):
             nuevo_id = str(uuid.uuid4())[:8]
@@ -257,7 +259,6 @@ def render_escaner():
             st.session_state.evidencias_guardadas[nuevo_id] = None
             st.session_state.chat_meta[nuevo_id] = {"rol": "un juez implacable", "brutalidad": 7}
             st.session_state.chat_actual = nuevo_id
-            # Se elimina sincronizar_db() aquí. Solo se guarda cuando escribas.
             st.rerun()
             
         st.markdown("---")
@@ -305,7 +306,7 @@ def render_escaner():
                     st.session_state.chat_meta[st.session_state.chat_actual] = {"rol": diccionario_roles[rol_seleccionado], "brutalidad": nivel_brutalidad}
                     
                     st.session_state.chats_guardados[st.session_state.chat_actual].append({"role": "user", "content": contexto, "mostrar": contexto if contexto else f"Análisis iniciado: {rol_seleccionado}.", "avatar": "👤"})
-                    sincronizar_db(st.session_state.chat_actual) # Ahora sí se guarda en base de datos.
+                    sincronizar_db(st.session_state.chat_actual)
                     st.rerun()
                 else:
                     st.warning("Exigencia Nivel 8: Proporciona contexto o sube un archivo.")
@@ -336,6 +337,14 @@ def render_escaner():
 
                     html_tarjeta = f"<div style='background: linear-gradient(135deg, #0a0a0c 0%, #16161d 100%); padding: 30px; border: 1px solid rgba(255,42,42,0.3); border-radius: 16px; text-align: center; margin-top: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.8);'><p style='color: #ff2a2a; margin: 0; font-family: \"Space Grotesk\", sans-serif; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; font-size: 0.9rem;'>DIAGNÓSTICO REFLEX</p><h1 style='font-size: 5rem; margin: 5px 0; color: white; font-family: \"Space Grotesk\", sans-serif; line-height: 1;'>{nota}<span style='font-size: 2rem; color: #555;'>/10</span></h1><div style='width: 100%; border-top: 1px solid rgba(255,255,255,0.1); margin: 20px 0; padding-top: 10px;'>{html_barras}</div><p style='color: #666; font-size: 0.75rem; font-family: \"Inter\", sans-serif; margin-top: 20px; margin-bottom: 0;'>DATA EXTRACTED // REFLEX AI</p></div>"
                     st.markdown(html_tarjeta, unsafe_allow_html=True)
+
+                    # Sistema de Voz Sintética
+                    if st.button("🔊 Leer Diagnóstico", key=f"tts_{i}"):
+                        with st.spinner("Sintetizando voz..."):
+                            tts = gTTS(text=texto_limpio, lang='es', tld='es')
+                            audio_bytes = io.BytesIO()
+                            tts.write_to_fp(audio_bytes)
+                            st.audio(audio_bytes, format='audio/mp3')
 
         # 4. Invocación del Motor
         if mensajes_actuales[-1]["role"] == "user":
