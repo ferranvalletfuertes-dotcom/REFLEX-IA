@@ -3,3 +3,4 @@ supabase
 pillow
 requests
 google-generativeai
+gTTS
