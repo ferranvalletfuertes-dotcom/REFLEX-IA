@@ -152,40 +152,67 @@ def render_login():
                         st.error(f"Fallo: {e}")
 
 # ==========================================
-# 2. PERSISTENCIA Y GESTIÓN EN NUBE
+# 2. PERSISTENCIA Y PROTOCOLO ANTI-BASURA
 # ==========================================
 def cargar_db():
     if "db_cargada" not in st.session_state:
         try:
             resp = st.session_state.supabase.table("chats_memoria").select("*").eq("usuario_id", st.session_state.usuario_id).execute()
-            st.session_state.chats_guardados = {fila['id']: fila['mensajes'] for fila in resp.data}
-            st.session_state.chat_meta = {fila['id']: fila['meta'] for fila in resp.data}
-            st.session_state.evidencias_guardadas = {fila['id']: None for fila in resp.data}
-            st.session_state.chat_actual = resp.data[0]['id'] if resp.data else "default"
-            if not resp.data:
+            
+            # Filtro implacable: Separar chats reales de la basura
+            chats_utiles = []
+            for fila in resp.data:
+                # Si el chat tiene historial real, se queda. Si está vacío, se purga.
+                if fila.get('mensajes') and len(fila['mensajes']) > 0:
+                    chats_utiles.append(fila)
+                else:
+                    try:
+                        # Ejecución de purga en base de datos
+                        st.session_state.supabase.table("chats_memoria").delete().eq("id", fila['id']).execute()
+                    except:
+                        pass
+                        
+            st.session_state.chats_guardados = {fila['id']: fila['mensajes'] for fila in chats_utiles}
+            st.session_state.chat_meta = {fila['id']: fila['meta'] for fila in chats_utiles}
+            st.session_state.evidencias_guardadas = {fila['id']: None for fila in chats_utiles}
+            
+            st.session_state.chat_actual = chats_utiles[0]['id'] if chats_utiles else "default"
+            
+            # Si no hay chats útiles, creamos la estructura base temporal, sin enviarla a la DB
+            if not chats_utiles:
                 st.session_state.chats_guardados["default"] = []
                 st.session_state.chat_meta["default"] = {"rol": "un juez implacable", "brutalidad": 7}
                 st.session_state.evidencias_guardadas["default"] = None
+                
         except Exception as e:
             st.error(f"Fallo al conectar con la bóveda de datos: {e}")
         st.session_state.db_cargada = True
 
 def sincronizar_db(chat_id):
     if chat_id != "default":
-        datos = {
-            "id": chat_id,
-            "usuario_id": st.session_state.usuario_id,
-            "meta": st.session_state.chat_meta[chat_id],
-            "mensajes": st.session_state.chats_guardados[chat_id]
-        }
-        st.session_state.supabase.table("chats_memoria").upsert(datos).execute()
+        mensajes_actuales = st.session_state.chats_guardados.get(chat_id, [])
+        # REGLA ORO: Solo tocamos la base de datos si el chat tiene información real
+        if len(mensajes_actuales) > 0:
+            datos = {
+                "id": chat_id,
+                "usuario_id": st.session_state.usuario_id,
+                "meta": st.session_state.chat_meta[chat_id],
+                "mensajes": mensajes_actuales
+            }
+            try:
+                st.session_state.supabase.table("chats_memoria").upsert(datos).execute()
+            except Exception as e:
+                st.error(f"Error de sincronización: {e}")
 
 def borrar_chat(chat_id):
     try:
+        # Intento de borrado definitivo en Supabase
         st.session_state.supabase.table("chats_memoria").delete().eq("id", chat_id).eq("usuario_id", st.session_state.usuario_id).execute()
     except Exception as e:
-        st.error(f"Error al borrar de la base de datos: {e}")
+        st.error(f"Fallo de Supabase: {e}")
+        st.warning("⚠️ Si los chats reaparecen al recargar, ve a tu panel de Supabase > Authentication > Policies (o RLS de tu tabla) y asegúrate de añadir una regla que te permita hacer 'DELETE'.")
     
+    # Limpieza inmediata de la memoria caché visual
     if chat_id in st.session_state.chats_guardados:
         del st.session_state.chats_guardados[chat_id]
     if chat_id in st.session_state.chat_meta:
@@ -195,10 +222,12 @@ def borrar_chat(chat_id):
         
     chats_restantes = list(st.session_state.chats_guardados.keys())
     st.session_state.chat_actual = chats_restantes[0] if chats_restantes else "default"
+    
     if not chats_restantes:
         st.session_state.chats_guardados["default"] = []
         st.session_state.chat_meta["default"] = {"rol": "un juez implacable", "brutalidad": 7}
         st.session_state.evidencias_guardadas["default"] = None
+        
     st.rerun()
 
 # ==========================================
@@ -228,12 +257,12 @@ def render_escaner():
             st.session_state.evidencias_guardadas[nuevo_id] = None
             st.session_state.chat_meta[nuevo_id] = {"rol": "un juez implacable", "brutalidad": 7}
             st.session_state.chat_actual = nuevo_id
-            sincronizar_db(nuevo_id)
+            # Se elimina sincronizar_db() aquí. Solo se guarda cuando escribas.
             st.rerun()
             
         st.markdown("---")
         for chat_id in list(reversed(list(st.session_state.chats_guardados.keys()))):
-            if chat_id != "default":
+            if chat_id != "default" and len(st.session_state.chats_guardados[chat_id]) > 0:
                 rol_hist = st.session_state.chat_meta[chat_id].get("rol", "").split(" de ")[-1][:12]
                 col_btn, col_menu = st.columns([4, 1])
                 with col_btn:
@@ -276,7 +305,7 @@ def render_escaner():
                     st.session_state.chat_meta[st.session_state.chat_actual] = {"rol": diccionario_roles[rol_seleccionado], "brutalidad": nivel_brutalidad}
                     
                     st.session_state.chats_guardados[st.session_state.chat_actual].append({"role": "user", "content": contexto, "mostrar": contexto if contexto else f"Análisis iniciado: {rol_seleccionado}.", "avatar": "👤"})
-                    sincronizar_db(st.session_state.chat_actual)
+                    sincronizar_db(st.session_state.chat_actual) # Ahora sí se guarda en base de datos.
                     st.rerun()
                 else:
                     st.warning("Exigencia Nivel 8: Proporciona contexto o sube un archivo.")
@@ -313,7 +342,6 @@ def render_escaner():
             with st.chat_message("assistant", avatar=avatar_ia):
                 with st.spinner("Anulando filtros de seguridad de Google..."):
                     try:
-                        # ---> EXTRACCIÓN BLINDADA Y CENSURA ANULADA <---
                         GEMINI_KEY = os.environ.get("GEMINI_KEY") or st.secrets["GEMINI_KEY"]
                         
                         modelo_absoluto = "gemini-3.6-flash"
