@@ -266,7 +266,9 @@ def render_escaner():
         </div>
         """, unsafe_allow_html=True)
 
-       with st.expander("⚙️ Ajustes y Privacidad"):
+        # ESTA LÍNEA DEBE ESTAR ALINEADA UN NIVEL DENTRO DE "with st.sidebar:"
+        with st.expander("⚙️ Ajustes y Privacidad"):
+            # ESTO DEBE ESTAR UN NIVEL DENTRO DEL EXPANDER
             st.checkbox(
                 "Permitir compartir conversaciones con el creador para mejorar el modelo.",
                 value=st.session_state.compartir_datos,
