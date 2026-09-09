@@ -173,9 +173,12 @@ def cargar_db():
             st.error(f"Fallo al conectar con la bóveda de datos: {e}")
         st.session_state.db_cargada = True
         
-    # Inicializar preferencia de privacidad si no existe en sesión
-    if "compartir_datos" not in st.session_state:
-        st.session_state.compartir_datos = False
+# Inicializar preferencia leyendo el último chat guardado
+        if "compartir_datos" not in st.session_state:
+            if chats_utiles:
+                st.session_state.compartir_datos = chats_utiles[0]['meta'].get('privacidad_compartida', False)
+            else:
+                st.session_state.compartir_datos = False
 
 def sincronizar_db(chat_id):
     if chat_id != "default":
