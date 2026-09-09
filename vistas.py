@@ -349,7 +349,7 @@ def render_escaner():
         # 4. Invocación del Motor
         if mensajes_actuales[-1]["role"] == "user":
             with st.chat_message("assistant", avatar=avatar_ia):
-                with st.spinner("Anulando filtros de seguridad de Google..."):
+               with st.spinner("Procesando matriz de conducta y calculando métricas REFLEX..."):
                     try:
                         GEMINI_KEY = os.environ.get("GEMINI_KEY") or st.secrets["GEMINI_KEY"]
                         
