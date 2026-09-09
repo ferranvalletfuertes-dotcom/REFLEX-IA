@@ -173,12 +173,13 @@ def cargar_db():
             st.error(f"Fallo al conectar con la bóveda de datos: {e}")
         st.session_state.db_cargada = True
         
-# Inicializar preferencia leyendo el último chat guardado
-        if "compartir_datos" not in st.session_state:
-            if chats_utiles:
-                st.session_state.compartir_datos = chats_utiles[0]['meta'].get('privacidad_compartida', False)
-            else:
-                st.session_state.compartir_datos = False
+# Inicializar preferencia leyendo la identidad del usuario en Supabase
+    if "compartir_datos" not in st.session_state:
+        try:
+            usuario = st.session_state.supabase.auth.get_user().user
+            st.session_state.compartir_datos = usuario.user_metadata.get("compartir_datos", False)
+        except:
+            st.session_state.compartir_datos = False
 
 def sincronizar_db(chat_id):
     if chat_id != "default":
@@ -226,6 +227,15 @@ def borrar_chat(chat_id):
 # 3. ESCÁNER NEURONAL Y GRÁFICOS
 # ==========================================
 def render_escaner():
+    def guardar_privacidad():
+        valor = st.session_state.checkbox_privacidad
+        st.session_state.compartir_datos = valor
+        try:
+            st.session_state.supabase.auth.update_user({"data": {"compartir_datos": valor}})
+            st.toast("Preferencia de privacidad blindada en el servidor.", icon="🔒")
+        except Exception as e:
+            st.error("Error al sincronizar privacidad.")
+
     cargar_db()
 
     svg_core = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="10" y="10" width="80" height="80" rx="24" fill="#0a0a0c" stroke="#25252b" stroke-width="4"/><path d="M25 50 H 75 M 50 25 V 75" stroke="#1f1f23" stroke-width="4" stroke-linecap="round"/><circle cx="50" cy="50" r="18" fill="#050505" stroke="#ffffff" stroke-width="6"/><circle cx="50" cy="50" r="6" fill="#ff2a2a"/></svg>"""
@@ -256,10 +266,12 @@ def render_escaner():
         </div>
         """, unsafe_allow_html=True)
 
-        with st.expander("⚙️ Ajustes y Privacidad"):
-            st.session_state.compartir_datos = st.checkbox(
+       with st.expander("⚙️ Ajustes y Privacidad"):
+            st.checkbox(
                 "Permitir compartir conversaciones con el creador para mejorar el modelo.",
                 value=st.session_state.compartir_datos,
+                key="checkbox_privacidad",
+                on_change=guardar_privacidad,
                 help="Si activas esto, ayudas a entrenar a REFLEX AI. Si lo desactivas, tu sesión es estrictamente confidencial."
             )
             st.markdown("---")
