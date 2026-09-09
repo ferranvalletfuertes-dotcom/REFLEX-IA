@@ -233,35 +233,22 @@ def render_escaner():
 
     st.markdown("""
     <style>
-    /* Animación de entrada para los chats */
-    [data-testid="stChatMessage"] {
-        animation: fadeIn 0.4s ease-out forwards;
-    }
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(15px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    
-    /* Ocultar el feo indicador de carga nativo de Streamlit */
-    [data-testid="stStatusWidget"] {
-        visibility: hidden;
-    }
-    
-    /* Suavizar la barra de scroll */
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
-    ::-webkit-scrollbar-thumb:hover { background: #ff2a2a; }
-   .stChatInputContainer textarea { background-color: transparent !important; border: none !important; color: white !important; padding-top: 15px !important; min-height: 120px !important; }
+    .stChatInputContainer textarea { background-color: transparent !important; border: none !important; color: white !important; padding-top: 15px !important; min-height: 120px !important; }
     .stChatInputContainer { border-radius: 12px !important; background-color: #1a1a21 !important; border: 1px solid #333 !important; padding: 5px !important; }
     .stChatInputContainer:focus-within { border-color: #ffffff !important; }
     [data-testid="stChatMessage"]:has(div:contains("👤")) { flex-direction: row-reverse; text-align: right; background-color: #16161d; border-radius: 15px 0px 15px 15px; padding: 1rem; }
     [data-testid="stChatMessage"]:has(img) { background-color: transparent; border-left: 2px solid #ffffff; padding: 1rem; }
+    [data-testid="stChatMessage"] { animation: fadeIn 0.4s ease-out forwards; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+    [data-testid="stStatusWidget"] { visibility: hidden; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #ff2a2a; }
     </style>
     """, unsafe_allow_html=True)
 
- with st.sidebar:
-        # LOGO VECTORIAL REFLEX AI
+    with st.sidebar:
         st.markdown("""
         <div style="text-align: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid rgba(255, 42, 42, 0.2);">
             <h2 style="font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-size: 2.2rem; background: linear-gradient(135deg, #ffffff 0%, #ff2a2a 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; letter-spacing: 2px; line-height: 1;">REFLEX</h2>
@@ -269,7 +256,6 @@ def render_escaner():
         </div>
         """, unsafe_allow_html=True)
 
-        # Menú de Ajustes y Privacidad
         with st.expander("⚙️ Ajustes y Privacidad"):
             st.session_state.compartir_datos = st.checkbox(
                 "Permitir compartir conversaciones con el creador para mejorar el modelo.",
