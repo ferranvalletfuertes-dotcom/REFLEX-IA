@@ -252,7 +252,7 @@ def render_escaner():
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
     ::-webkit-scrollbar-thumb:hover { background: #ff2a2a; }
-    .stChatInputContainer textarea { background-color: transparent !important; border: none !important; color: white !important; padding-top: 15px !important; }
+   .stChatInputContainer textarea { background-color: transparent !important; border: none !important; color: white !important; padding-top: 15px !important; min-height: 120px !important; }
     .stChatInputContainer { border-radius: 12px !important; background-color: #1a1a21 !important; border: 1px solid #333 !important; padding: 5px !important; }
     .stChatInputContainer:focus-within { border-color: #ffffff !important; }
     [data-testid="stChatMessage"]:has(div:contains("👤")) { flex-direction: row-reverse; text-align: right; background-color: #16161d; border-radius: 15px 0px 15px 15px; padding: 1rem; }
@@ -433,9 +433,15 @@ def render_escaner():
                             
                     except Exception as e:
                         st.error(f"Falla de red crítica: {e}")
+# 5. Interfaz de Defensa y Subida Extra
+        with st.popover("➕ Añadir nueva imagen", help="Sube más contexto visual"):
+            nueva_foto = st.file_uploader("Adjuntar archivo extra", type=["jpg", "png", "jpeg"], key="foto_extra")
+            if nueva_foto:
+                st.session_state.evidencias_guardadas[st.session_state.chat_actual] = nueva_foto.getvalue()
+                st.success("Evidencia actualizada. Envía un mensaje para analizarla.")
 
-        # 5. Interfaz de Defensa
         if nuevo_mensaje := st.chat_input("Exige la solución exacta o defiéndete..."):
             st.session_state.chats_guardados[st.session_state.chat_actual].append({"role": "user", "content": nuevo_mensaje, "mostrar": nuevo_mensaje, "avatar": "👤"})
             sincronizar_db(st.session_state.chat_actual)
             st.rerun()
+            
