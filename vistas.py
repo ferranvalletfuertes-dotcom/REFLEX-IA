@@ -260,7 +260,15 @@ def render_escaner():
     </style>
     """, unsafe_allow_html=True)
 
-    with st.sidebar:
+ with st.sidebar:
+        # LOGO VECTORIAL REFLEX AI
+        st.markdown("""
+        <div style="text-align: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid rgba(255, 42, 42, 0.2);">
+            <h2 style="font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-size: 2.2rem; background: linear-gradient(135deg, #ffffff 0%, #ff2a2a 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; letter-spacing: 2px; line-height: 1;">REFLEX</h2>
+            <h3 style="font-family: 'Inter', sans-serif; font-weight: 400; font-size: 0.9rem; color: #666; margin: 5px 0 0 0; letter-spacing: 6px;">A.I. SYSTEM</h3>
+        </div>
+        """, unsafe_allow_html=True)
+
         # Menú de Ajustes y Privacidad
         with st.expander("⚙️ Ajustes y Privacidad"):
             st.session_state.compartir_datos = st.checkbox(
