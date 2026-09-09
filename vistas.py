@@ -230,6 +230,25 @@ def render_escaner():
 
     st.markdown("""
     <style>
+    /* Animación de entrada para los chats */
+    [data-testid="stChatMessage"] {
+        animation: fadeIn 0.4s ease-out forwards;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(15px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Ocultar el feo indicador de carga nativo de Streamlit */
+    [data-testid="stStatusWidget"] {
+        visibility: hidden;
+    }
+    
+    /* Suavizar la barra de scroll */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #ff2a2a; }
     .stChatInputContainer textarea { background-color: transparent !important; border: none !important; color: white !important; padding-top: 15px !important; }
     .stChatInputContainer { border-radius: 12px !important; background-color: #1a1a21 !important; border: 1px solid #333 !important; padding: 5px !important; }
     .stChatInputContainer:focus-within { border-color: #ffffff !important; }
