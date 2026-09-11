@@ -288,6 +288,22 @@ def render_escaner():
                 on_change=guardar_privacidad,
                 help="Si activas esto, ayudas a entrenar a REFLEX AI. Si lo desactivas, tu sesión es estrictamente confidencial."
             )
+
+            st.markdown("---")
+        # DESLIZADOR DE TONO
+        tono_actual = st.session_state.chat_meta[st.session_state.chat_actual].get("tono", "Intermedio (Claro)")
+        
+        nuevo_tono = st.select_slider(
+            "🎙️ Registro Lingüístico",
+            options=["Colega (Directo)", "Intermedio (Claro)", "Implacable (Técnico)"],
+            value=tono_actual,
+            help="Ajusta cómo de complejo y profesional será el lenguaje de la IA."
+        )
+        
+        # Guardar el estado al cambiar
+        if nuevo_tono != tono_actual:
+            st.session_state.chat_meta[st.session_state.chat_actual]["tono"] = nuevo_tono
+            # Aquí idealmente llamas a tu función sincronizar_db() si quieres que se guarde de inmediato
             st.markdown("---")
             if st.button("🚪 Cerrar Sesión", use_container_width=True):
                 st.session_state.supabase.auth.sign_out()
