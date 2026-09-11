@@ -237,6 +237,18 @@ def render_escaner():
             st.error("Error al sincronizar privacidad.")
 
     cargar_db()
+    # INYECCIÓN: Auto-creación de chat si la cuenta es nueva o está vacía
+    if not st.session_state.chats_guardados or st.session_state.chat_actual not in st.session_state.chats_guardados:
+        chat_por_defecto = "Análisis Inicial"
+        st.session_state.chats_guardados[chat_por_defecto] = []
+        st.session_state.chat_meta[chat_por_defecto] = {
+            "rol": "un juez implacable", 
+            "brutalidad": 7, 
+            "privacidad": False,
+            "tono": "Intermedio (Claro)" # Nueva variable de lenguaje
+        }
+        st.session_state.evidencias_guardadas[chat_por_defecto] = None
+        st.session_state.chat_actual = chat_por_defecto
 
     svg_core = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="10" y="10" width="80" height="80" rx="24" fill="#0a0a0c" stroke="#25252b" stroke-width="4"/><path d="M25 50 H 75 M 50 25 V 75" stroke="#1f1f23" stroke-width="4" stroke-linecap="round"/><circle cx="50" cy="50" r="18" fill="#050505" stroke="#ffffff" stroke-width="6"/><circle cx="50" cy="50" r="6" fill="#ff2a2a"/></svg>"""
     avatar_ia = f"data:image/svg+xml;base64,{base64.b64encode(svg_core.encode('utf-8')).decode('utf-8')}"
