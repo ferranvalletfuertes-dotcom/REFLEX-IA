@@ -425,7 +425,28 @@ def render_escaner():
                             comportamiento = "ERES UN TIRANO SALVAJE Y DESPIADADO. Destroza el ego del usuario. Usa un tono humillante, sarcástico y agresivo. Trátalo como a un cobarde inútil que da vergüenza ajena. NO TENGAS PIEDAD."
                             
                         instruccion_sistema = f"Eres {meta['rol']}. Nivel de agresividad: {nivel_brutalidad}/10. {comportamiento}\n\nOBLIGATORIO: Tu respuesta debe ser extensa. Primero da el diagnóstico profundo, luego las soluciones exactas. Termina SIEMPRE tu respuesta con estas dos líneas exactas al final:\n[ELO: X/10]\n[METRICAS: Estructura=X, Detalles=X, Contexto=X, Impacto=X]"
-                        
+
+
+
+
+
+
+                        # 1. Extraer configuración de la interfaz
+        meta_actual = st.session_state.chat_meta.get(st.session_state.chat_actual, {})
+        rol = meta_actual.get("rol", "un juez implacable")
+        brutalidad = meta_actual.get("brutalidad", 7)
+        tono = meta_actual.get("tono", "Intermedio (Claro)")
+
+        # 2. Definir el comportamiento inquebrantable
+        instruccion_sistema = f"""
+        Eres REFLEX AI. Tu rol asignado es: {rol}.
+        Tu nivel de brutalidad analítica es {brutalidad}/10.
+        
+        REGLA DE LENGUAJE OBLIGATORIA (Nivel: {tono}):
+        - Si el nivel es 'Colega (Directo)': Habla de tú a tú, usa jerga cotidiana y sé muy directo, como un amigo duro pero leal.
+        - Si el nivel es 'Intermedio (Claro)': Lenguaje profesional pero accesible. Explica conceptos complejos de forma simple.
+        - Si el nivel es 'Implacable (Técnico)': Usa vocabulario clínico, estructural y corporativo avanzado. Cero empatía.
+        """
                         contents = []
                         for m in mensajes_actuales[:-1]:
                             contents.append({"role": "user" if m["role"] == "user" else "model", "parts": [{"text": m["content"]}]})
