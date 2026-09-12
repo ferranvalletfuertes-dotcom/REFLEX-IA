@@ -280,7 +280,7 @@ def render_escaner():
                         system_prompt = f"Eres REFLEX AI. Rol: {meta.get('rol', 'juez')}. Brutalidad: {meta.get('brutalidad', 7)}/10. Tono: {meta.get('tono', 'Directo')}. OBLIGATORIO: Termina SIEMPRE con [ELO: X/10] y [METRICAS: Estructura=X, Detalles=X, Contexto=X, Impacto=X]."
                         
                         model = genai.GenerativeModel(
-                            model_name="gemini-1.5-flash",
+                            model_name="gemini-2.5-flash",
                             system_instruction=system_prompt
                         )
                         
@@ -313,7 +313,7 @@ def render_escaner():
                         sincronizar_db(st.session_state.chat_actual)
 
                     except Exception as e:
-                        st.error(f"Error crítico en la matriz de IA: {e}")
+                        st.error(f"Error crítico en la matriz de IA con SDK oficial: {e}")
 
         with st.popover("➕ Añadir imagen"):
             nueva_foto = st.file_uploader("Adjuntar archivo extra", type=["jpg", "png", "jpeg"], key="foto_extra")
