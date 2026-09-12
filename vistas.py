@@ -14,61 +14,43 @@ from gtts import gTTS
 # 1. LANDING PAGE Y ACCESO (EMAIL / CONTRASEÑA)
 # ==========================================
 def render_login():
-    st.markdown("""
-    <style>
-    @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-    .landing-container { max-width: 800px; margin: 0 auto; padding: 2rem 1rem; font-family: 'Inter', sans-serif; }
-    .hero-section { text-align: center; padding: 4rem 1rem; animation: fadeInUp 1s ease-out; }
-    .hero-title { font-size: 3.5rem; font-weight: 800; background: linear-gradient(135deg, #ffffff 0%, #ff2a2a 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 1rem; }
-    .hero-subtitle { color: #888; font-size: 1.2rem; margin-bottom: 2rem; }
-    .scroll-card { background: linear-gradient(135deg, #0a0a0c 0%, #16161d 100%); border: 1px solid rgba(255, 42, 42, 0.2); border-radius: 16px; padding: 2.5rem; margin: 3rem 0; box-shadow: 0 10px 30px rgba(0,0,0,0.8); animation: fadeInUp 0.8s ease-out; transition: transform 0.3s ease; }
-    .scroll-card:hover { border-color: rgba(255, 42, 42, 0.6); transform: translateY(-5px); }
-    .card-title { color: #ff2a2a; font-family: 'Space Grotesk', sans-serif; font-size: 1.5rem; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 1px; }
-    </style>
-    """, unsafe_allow_html=True)
-
-    st.markdown("""
-    <div class="landing-container">
-        <div class="hero-section">
-            <h1 class="hero-title">REFLEX AI</h1>
-            <p class="hero-subtitle">El sistema definitivo de diagnóstico psicológico, conductual y de optimización implacable.</p>
-        </div>
-        <div class="scroll-card">
-            <div class="card-title">⚡ ¿Qué es este sistema?</div>
-            <p style="color: #ddd; line-height: 1.6;">REFLEX AI no es un chatbot de autoayuda común. Es una herramienta de ingeniería de conducta diseñada para erradicar bloqueos mentales y destrozar excusas.</p>
-        </div>
-        <div style="background: rgba(255, 42, 42, 0.05); border: 1px solid rgba(255, 42, 42, 0.3); border-radius: 8px; padding: 15px; text-align: justify; font-size: 0.75rem; color: #888; font-family: 'Inter', sans-serif; margin-bottom: 2rem;">
-            <strong style="color: #ff2a2a;">TÉRMINOS DE USO Y EXENCIÓN DE RESPONSABILIDAD:</strong> REFLEX AI es una herramienta diseñada exclusivamente con fines de entretenimiento y auto-reflexión. NO constituye asesoramiento médico, psicológico, financiero ni profesional.
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    col_izq, col_centro, col_der = st.columns([1, 2, 1])
-    with col_centro:
-        with st.container(border=True):
+    st.markdown("---")
+            with st.expander("⚖️ CONTRATO DE EXENCIÓN DE RESPONSABILIDAD (OBLIGATORIO)"):
+                st.markdown("""
+                **1. Naturaleza del Servicio:** REFLEX AI es un software experimental de análisis teórico. NO es un psicólogo, médico, asesor financiero, nutricionista ni consultor legal.
+                **2. Cero Responsabilidad:** Al acceder, el usuario renuncia irrevocablemente a cualquier derecho de demanda contra los desarrolladores por daños psicológicos, pérdidas financieras, físicas o decisiones tomadas basándose en el algoritmo.
+                **3. Datos Algorítmicos:** Las métricas, ELO y puntuaciones generadas son cálculos probabilísticos sin validez clínica ni científica. El usuario asume el 100% del riesgo derivado de su uso.
+                """)
+            
+            acepta_terminos = st.checkbox("Confirmo que soy mayor de edad y acepto el descargo de responsabilidad legal.")
+            
             tab1, tab2 = st.tabs(["Iniciar Sesión", "Crear Cuenta"])
             with tab1:
                 email = st.text_input("Email", key="log_email")
                 pwd = st.text_input("Contraseña", type="password", key="log_pwd")
                 if st.button("ENTRAR AL ESCÁNER", use_container_width=True):
-                    try:
-                        resp = st.session_state.supabase.auth.sign_in_with_password({"email": email, "password": pwd})
-                        if resp.user:
-                            st.session_state.usuario_id = resp.user.id
-                            st.rerun()
-                    except Exception as e:
-                        st.error(f"Fallo: {e}")
+                    if not acepta_terminos:
+                        st.error("ACCESO DENEGADO: Debes aceptar el contrato legal.")
+                    else:
+                        try:
+                            resp = st.session_state.supabase.auth.sign_in_with_password({"email": email, "password": pwd})
+                            if resp.user:
+                                st.session_state.usuario_id = resp.user.id
+                                st.rerun()
+                        except Exception as e: st.error(f"Fallo: {e}")
             with tab2:
                 reg_email = st.text_input("Email", key="reg_email")
                 reg_pwd = st.text_input("Contraseña (Min 6)", type="password", key="reg_pwd")
                 if st.button("FORJAR IDENTIDAD", use_container_width=True):
-                    try:
-                        resp = st.session_state.supabase.auth.sign_up({"email": reg_email, "password": reg_pwd})
-                        if resp.user:
-                            st.session_state.usuario_id = resp.user.id
-                            st.rerun()
-                    except Exception as e:
-                        st.error(f"Fallo: {e}")
+                    if not acepta_terminos:
+                        st.error("ACCESO DENEGADO: Debes aceptar el contrato legal.")
+                    else:
+                        try:
+                            resp = st.session_state.supabase.auth.sign_up({"email": reg_email, "password": reg_pwd})
+                            if resp.user:
+                                st.session_state.usuario_id = resp.user.id
+                                st.rerun()
+                        except Exception as e: st.error(f"Fallo: {e}")
 
 # ==========================================
 # 2. PERSISTENCIA Y PROTOCOLO ANTI-BASURA
