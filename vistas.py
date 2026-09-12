@@ -431,7 +431,7 @@ def render_escaner():
 
 
 
-                      # --- 1. PREPARAR LA MEMORIA (CONTENTS) ---
+           # --- 1. PREPARAR LA MEMORIA (CONTENTS) ---
         contents = []
         mensajes_actuales = st.session_state.chats_guardados[st.session_state.chat_actual]
         
