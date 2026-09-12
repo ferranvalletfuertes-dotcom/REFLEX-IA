@@ -295,7 +295,7 @@ def render_escaner():
                         
                         if respuesta.status_code == 404:
                             for c in contents: c["parts"] = [p for p in c["parts"] if "inline_data" not in p]
-                            url_pro = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key={GEMINI_KEY}"
+                            url_pro = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro:generateContent?key={GEMINI_KEY}"
                             respuesta = requests.post(url_pro, headers={"Content-Type": "application/json"}, data=json.dumps(payload))
 
                         if respuesta.status_code == 200:
