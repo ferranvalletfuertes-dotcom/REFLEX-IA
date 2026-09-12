@@ -273,35 +273,61 @@ def render_escaner():
                 with st.spinner("Calculando métricas REFLEX..."):
                     try:
                         GEMINI_KEY = os.environ.get("GEMINI_KEY") or st.secrets["GEMINI_KEY"]
+                        from google import genai
+                        from google.genai import types
                         
-                        genai.configure(api_key=GEMINI_KEY)
+                        client = genai.Client(api_key=GEMINI_KEY)
                         
                         meta = st.session_state.chat_meta.get(st.session_state.chat_actual, {})
-                        system_prompt = f"Eres REFLEX AI. Rol: {meta.get('rol', 'juez')}. Brutalidad: {meta.get('brutalidad', 7)}/10. Tono: {meta.get('tono', 'Directo')}. OBLIGATORIO: Termina SIEMPRE con [ELO: X/10] y [METRICAS: Estructura=X, Detalles=X, Contexto=X, Impacto=X]."
                         
-                        model = genai.GenerativeModel(
-                            model_name="gemini-3.6-flash",
-                            system_instruction=system_prompt
-                        )
+                        # EL NUEVO CEREBRO DE LA IA: MASIVO, BRUTAL Y ENFOCADO EN SOLUCIONES
+                        system_prompt = f"""Eres REFLEX AI, un sistema avanzado de diagnóstico, ingeniería de conducta y optimización extrema.
+                        Rol asignado: {meta.get('rol', 'juez implacable')}.
+                        Nivel de Brutalidad: {meta.get('brutalidad', 7)}/10. (Si es 9 o 10, DEBES ser despiadado, destruir excusas y ser clínicamente frío. Si el usuario envía una imagen, destrózala con precisión biomecánica, estética o estratégica. Cero empatía, cien por cien verdad).
+                        Tono: {meta.get('tono', 'Directo')}.
+
+                        REGLAS DE GENERACIÓN OBLIGATORIAS (Tu respuesta debe ser inmensamente larga y detallada):
                         
-                        historial_sdk = []
+                        FASE 1: DIAGNÓSTICO LETAL
+                        Analiza la imagen o el texto proporcionado diseccionando cada fallo. No uses listas cortas. Desarrolla párrafos extensos y técnicos. Explica el "POR QUÉ" de cada fracaso anatómico, psicológico o estructural que detectes.
+                        
+                        FASE 2: PROTOCOLO DE RECONSTRUCCIÓN (SOLUCIONES ACCIONABLES)
+                        ESTO ES OBLIGATORIO. No puedes dejar al usuario solo con el diagnóstico. Tienes que proveer un plan de acción exhaustivo, paso a paso. Qué ejercicios hacer, qué hábitos cambiar, qué frameworks mentales usar. Que sea una guía táctica masiva.
+                        
+                        CIERRE OBLIGATORIO:
+                        Termina SIEMPRE con estas dos líneas exactas al final de tu respuesta (sin excepciones):
+                        [ELO: X/10]
+                        [METRICAS: Estructura=X, Detalles=X, Contexto=X, Impacto=X]
+                        """
+                        
+                        contents_sdk = []
                         for m in mensajes_actuales[:-1]:
-                            historial_sdk.append({
-                                "role": "user" if m["role"] == "user" else "model",
-                                "parts": [m["content"]]
-                            })
+                            contents_sdk.append(types.Content(
+                                role="user" if m["role"] == "user" else "model",
+                                parts=[types.Part.from_text(text=m["content"])]
+                            ))
                         
-                        chat = model.start_chat(history=historial_sdk)
-                        
-                        mensaje_usuario = mensajes_actuales[-1]["content"]
-                        contenido_enviar = [mensaje_usuario]
-                        
+                        parts_actuales = [types.Part.from_text(text=mensajes_actuales[-1]["content"])]
                         if evidencia_actual is not None:
                             imagen_pil = Image.open(io.BytesIO(evidencia_actual))
-                            contenido_enviar.append(imagen_pil)
-                            
-                        respuesta_api = chat.send_message(contenido_enviar)
-                        texto_bruto = respuesta_api.text
+                            buffered = io.BytesIO()
+                            imagen_pil.save(buffered, format="JPEG")
+                            parts_actuales.append(types.Part.from_bytes(data=buffered.getvalue(), mime_type="image/jpeg"))
+                        
+                        contents_sdk.append(types.Content(role="user", parts=parts_actuales))
+
+                        # HEMOS AÑADIDO max_output_tokens=8192 PARA QUE HABLE EXTENSAMENTE
+                        response = client.models.generate_content(
+                            model='gemini-3.6-flash',
+                            contents=contents_sdk,
+                            config=types.GenerateContentConfig(
+                                system_instruction=system_prompt,
+                                temperature=0.7,
+                                max_output_tokens=8192, 
+                            ),
+                        )
+
+                        texto_bruto = response.text
                         
                         def generador(t):
                             for p in t.split(" "): 
