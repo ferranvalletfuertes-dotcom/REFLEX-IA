@@ -80,6 +80,7 @@ def render_login():
                                 st.session_state.usuario_id = resp.user.id
                                 st.rerun()
                         except Exception as e: st.error(f"Fallo: {e}")
+
 # ==========================================
 # 2. PERSISTENCIA Y PROTOCOLO ANTI-BASURA
 # ==========================================
@@ -259,6 +260,13 @@ def render_escaner():
                                 nombre, valor = dato.split('=')
                                 html_barras += f"<div style='margin-top: 12px; text-align: left;'><div style='display: flex; justify-content: space-between; font-size: 0.75rem; color: #aaa; font-family: \"Space Grotesk\", sans-serif;'><span>{nombre.strip().upper()}</span><span>{float(valor.strip())}/10</span></div><div style='width: 100%; background: rgba(255,255,255,0.05); height: 6px; border-radius: 3px;'><div style='width: {(float(valor.strip()) / 10) * 100}%; background: {'#ff2a2a' if float(valor.strip()) < 5 else '#ffdb58' if float(valor.strip()) < 8 else '#00ff88'}; height: 100%; border-radius: 3px;'></div></div></div>"
                     st.markdown(f"<div style='background: linear-gradient(135deg, #0a0a0c 0%, #16161d 100%); padding: 30px; border: 1px solid rgba(255,42,42,0.3); border-radius: 16px; text-align: center; margin-top: 20px;'><p style='color: #ff2a2a; font-weight: 700; margin: 0;'>DIAGNÓSTICO REFLEX</p><h1 style='font-size: 5rem; margin: 5px 0; color: white;'>{nota}<span style='font-size: 2rem; color: #555;'>/10</span></h1><div>{html_barras}</div></div>", unsafe_allow_html=True)
+                
+                if st.button("🔊 Leer Diagnóstico", key=f"tts_{i}"):
+                    with st.spinner("Sintetizando voz..."):
+                        tts = gTTS(text=texto_limpio, lang='es', tld='es')
+                        audio_bytes = io.BytesIO()
+                        tts.write_to_fp(audio_bytes)
+                        st.audio(audio_bytes, format='audio/mp3')
 
         if mensajes_actuales[-1]["role"] == "user":
             with st.chat_message("assistant", avatar=avatar_ia):
@@ -278,16 +286,16 @@ def render_escaner():
                         partes_finales.append({"inline_data": {"mime_type": "image/jpeg", "data": base64.b64encode(evidencia_actual).decode('utf-8')}})
                     contents.append({"role": "user", "parts": partes_finales})
 
-                  try:
+                    try:
                         GEMINI_KEY = os.environ.get("GEMINI_KEY") or st.secrets["GEMINI_KEY"]
                         payload = {"contents": contents, "safetySettings": [{"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"}, {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"}, {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"}, {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}]}
                         
-                        url_flash = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_KEY}"
+                        url_flash = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_KEY}"
                         respuesta = requests.post(url_flash, headers={"Content-Type": "application/json"}, data=json.dumps(payload))
                         
                         if respuesta.status_code == 404:
                             for c in contents: c["parts"] = [p for p in c["parts"] if "inline_data" not in p]
-                            url_pro = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key={GEMINI_KEY}"
+                            url_pro = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key={GEMINI_KEY}"
                             respuesta = requests.post(url_pro, headers={"Content-Type": "application/json"}, data=json.dumps(payload))
 
                         if respuesta.status_code == 200:
