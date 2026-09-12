@@ -6,9 +6,9 @@ import base64
 import uuid
 import json
 import re
-import requests
 import time
 from gtts import gTTS
+import google.generativeai as genai
 
 # ==========================================
 # 1. LANDING PAGE Y ACCESO (EMAIL / CONTRASEÑA)
@@ -271,27 +271,11 @@ def render_escaner():
         if mensajes_actuales[-1]["role"] == "user":
             with st.chat_message("assistant", avatar=avatar_ia):
                 with st.spinner("Calculando métricas REFLEX..."):
-                    contents = []
-                    meta = st.session_state.chat_meta.get(st.session_state.chat_actual, {})
-                    
-                    contents.append({"role": "user", "parts": [{"text": f"Eres REFLEX AI. Rol: {meta.get('rol', 'juez')}. Brutalidad: {meta.get('brutalidad', 7)}/10. Tono: {meta.get('tono', 'Directo')}. OBLIGATORIO: Termina SIEMPRE con [ELO: X/10] y [METRICAS: Estructura=X, Detalles=X, Contexto=X, Impacto=X]."}]})
-                    contents.append({"role": "model", "parts": [{"text": "Entendido. Operaré estrictamente bajo estos parámetros exactos."}]})
-
-                    for m in mensajes_actuales[:-1]:
-                        contents.append({"role": "user" if m["role"] == "user" else "model", "parts": [{"text": m["content"]}]})
-                    
-                    partes_finales = [{"text": mensajes_actuales[-1]["content"]}]
-                    if evidencia_actual is not None:
-                        partes_finales.append({"inline_data": {"mime_type": "image/jpeg", "data": base64.b64encode(evidencia_actual).decode('utf-8')}})
-                    contents.append({"role": "user", "parts": partes_finales})
-
-             try:
-                        import google.generativeai as genai
+                    try:
                         GEMINI_KEY = os.environ.get("GEMINI_KEY") or st.secrets["GEMINI_KEY"]
-                        
                         genai.configure(api_key=GEMINI_KEY)
                         
-                        # Usamos el SDK oficial para evitar cualquier error de rutas o 404 de la API HTTP
+                        meta = st.session_state.chat_meta.get(st.session_state.chat_actual, {})
                         system_prompt = f"Eres REFLEX AI. Rol: {meta.get('rol', 'juez')}. Brutalidad: {meta.get('brutalidad', 7)}/10. Tono: {meta.get('tono', 'Directo')}. OBLIGATORIO: Termina SIEMPRE con [ELO: X/10] y [METRICAS: Estructura=X, Detalles=X, Contexto=X, Impacto=X]."
                         
                         model = genai.GenerativeModel(
@@ -299,7 +283,6 @@ def render_escaner():
                             system_instruction=system_prompt
                         )
                         
-                        # Preparamos el historial para el SDK
                         historial_sdk = []
                         for m in mensajes_actuales[:-1]:
                             historial_sdk.append({
@@ -309,7 +292,6 @@ def render_escaner():
                         
                         chat = model.start_chat(history=historial_sdk)
                         
-                        # Mensaje actual con soporte de imagen opcional
                         mensaje_usuario = mensajes_actuales[-1]["content"]
                         if evidencia_actual is not None:
                             imagen_pil = Image.open(io.BytesIO(evidencia_actual))
