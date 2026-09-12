@@ -103,7 +103,7 @@ def cargar_db():
             
             if not chats_utiles:
                 st.session_state.chats_guardados["default"] = []
-                st.session_state.chat_meta["default"] = {"rol": "un juez implacable", "brutalidad": 7, "privacidad": False, "tono": "Intermedio (Claro)"}
+                st.session_state.chat_meta["default"] = {"rol": "un juez implacable", "brutalidad": 7, "privacidad": False, "tono": "Intermedio (Claro)", "longitud": "Pergamino (Inmenso)"}
                 st.session_state.evidencias_guardadas["default"] = None
         except Exception as e:
             st.error(f"Fallo al conectar con la bóveda de datos: {e}")
@@ -137,7 +137,7 @@ def borrar_chat(chat_id):
     st.session_state.chat_actual = chats_restantes[0] if chats_restantes else "default"
     if not chats_restantes:
         st.session_state.chats_guardados["default"] = []
-        st.session_state.chat_meta["default"] = {"rol": "un juez implacable", "brutalidad": 7, "privacidad": False, "tono": "Intermedio (Claro)"}
+        st.session_state.chat_meta["default"] = {"rol": "un juez implacable", "brutalidad": 7, "privacidad": False, "tono": "Intermedio (Claro)", "longitud": "Pergamino (Inmenso)"}
         st.session_state.evidencias_guardadas["default"] = None
     st.rerun()
 
@@ -157,7 +157,7 @@ def render_escaner():
     if not st.session_state.chats_guardados or st.session_state.chat_actual not in st.session_state.chats_guardados:
         chat_por_defecto = "Análisis Inicial"
         st.session_state.chats_guardados[chat_por_defecto] = []
-        st.session_state.chat_meta[chat_por_defecto] = {"rol": "un juez implacable", "brutalidad": 7, "privacidad": False, "tono": "Intermedio (Claro)"}
+        st.session_state.chat_meta[chat_por_defecto] = {"rol": "un juez implacable", "brutalidad": 7, "privacidad": False, "tono": "Intermedio (Claro)", "longitud": "Pergamino (Inmenso)"}
         st.session_state.evidencias_guardadas[chat_por_defecto] = None
         st.session_state.chat_actual = chat_por_defecto
 
@@ -184,20 +184,28 @@ def render_escaner():
         
         tono_actual = st.session_state.chat_meta[st.session_state.chat_actual].get("tono", "Intermedio (Claro)")
         nuevo_tono = st.select_slider("🎙️ Registro Lingüístico", options=["Colega (Directo)", "Intermedio (Claro)", "Implacable (Técnico)"], value=tono_actual)
-        if nuevo_tono != tono_actual:
+        
+        longitud_actual = st.session_state.chat_meta[st.session_state.chat_actual].get("longitud", "Pergamino (Inmenso)")
+        nueva_longitud = st.select_slider("📏 Formato de Salida", options=["TikTok (Corto)", "Normal", "Pergamino (Inmenso)"], value=longitud_actual)
+
+        if nuevo_tono != tono_actual or nueva_longitud != longitud_actual:
             st.session_state.chat_meta[st.session_state.chat_actual]["tono"] = nuevo_tono
-            st.markdown("---")
-            if st.button("🚪 Cerrar Sesión", use_container_width=True):
-                st.session_state.supabase.auth.sign_out()
-                st.session_state.clear()
-                st.rerun()
+            st.session_state.chat_meta[st.session_state.chat_actual]["longitud"] = nueva_longitud
+            sincronizar_db(st.session_state.chat_actual)
+            st.rerun()
+
+        st.markdown("---")
+        if st.button("🚪 Cerrar Sesión", use_container_width=True):
+            st.session_state.supabase.auth.sign_out()
+            st.session_state.clear()
+            st.rerun()
 
         st.markdown("### Memoria de Sesiones")
         if st.button("➕ Nuevo Análisis", use_container_width=True):
             nuevo_id = str(uuid.uuid4())[:8]
             st.session_state.chats_guardados[nuevo_id] = []
             st.session_state.evidencias_guardadas[nuevo_id] = None
-            st.session_state.chat_meta[nuevo_id] = {"rol": "un juez implacable", "brutalidad": 7, "tono": "Intermedio (Claro)"}
+            st.session_state.chat_meta[nuevo_id] = {"rol": "un juez implacable", "brutalidad": 7, "tono": "Intermedio (Claro)", "longitud": "Pergamino (Inmenso)"}
             st.session_state.chat_actual = nuevo_id
             st.rerun()
             
@@ -234,7 +242,7 @@ def render_escaner():
                 if st.session_state.chat_actual == "default": st.warning("Crea una Nueva Sesión.")
                 elif archivo is not None or contexto.strip() != "":
                     st.session_state.evidencias_guardadas[st.session_state.chat_actual] = archivo.getvalue() if archivo else None
-                    st.session_state.chat_meta[st.session_state.chat_actual] = {"rol": diccionario_roles[rol_seleccionado], "brutalidad": nivel_brutalidad, "tono": "Intermedio (Claro)"}
+                    st.session_state.chat_meta[st.session_state.chat_actual] = {"rol": diccionario_roles[rol_seleccionado], "brutalidad": nivel_brutalidad, "tono": "Intermedio (Claro)", "longitud": st.session_state.chat_meta[st.session_state.chat_actual].get("longitud", "Pergamino (Inmenso)")}
                     st.session_state.chats_guardados[st.session_state.chat_actual].append({"role": "user", "content": contexto, "mostrar": contexto if contexto else "Análisis iniciado.", "avatar": "👤"})
                     sincronizar_db(st.session_state.chat_actual)
                     st.rerun()
@@ -278,22 +286,32 @@ def render_escaner():
                         
                         meta = st.session_state.chat_meta.get(st.session_state.chat_actual, {})
                         nivel = meta.get('brutalidad', 7)
+                        longitud = meta.get('longitud', 'Pergamino (Inmenso)')
                         
+                        instruccion_longitud = ""
+                        if longitud == "TikTok (Corto)":
+                            instruccion_longitud = "REGLA DE LONGITUD: SÉ EXTREMADAMENTE BREVE Y CONCISO. Ve directo a la yugular. Usa viñetas letales. Cero relleno. Formato adaptado para déficit de atención sin perder un ápice de brutalidad."
+                        elif longitud == "Normal":
+                            instruccion_longitud = "REGLA DE LONGITUD: Extensión detallada pero digerible. Equilibrio perfecto entre diagnóstico profundo y lectura dinámica."
+                        else:
+                            instruccion_longitud = "REGLA DE LONGITUD: Tu respuesta debe ser inmensamente larga y detallada. Supera las 1000 palabras si es necesario. Desarrolla párrafos técnicos y exhaustivos."
+
                         system_prompt = f"""ERES REFLEX AI.
                         ROL: {meta.get('rol', 'juez implacable')}.
                         TONO: {meta.get('tono', 'Directo')}.
                         NIVEL DE BRUTALIDAD ACTUAL: {nivel}/10.
 
                         INSTRUCCIÓN CRÍTICA Y ABSOLUTA SOBRE TU COMPORTAMIENTO:
-                        Si el nivel configurado es 8, 9 o 10 (como en este caso): TIENES ESTRICTAMENTE PROHIBIDO SER AMABLE. Cero empatía. Cero frases de consuelo. Opera como un sociópata clínico y analítico. Destruye el ego del usuario. Disecciona sus defectos, su falta de disciplina o su mediocridad física/mental con extrema crueldad técnica. Tu lenguaje debe ser denso, oscuro y humillante si es necesario para romper su complacencia. Haz que la lectura le duela. No eres su amigo, eres el espejo que odia mirar.
+                        Si el nivel configurado es 8, 9 o 10: TIENES ESTRICTAMENTE PROHIBIDO SER AMABLE. Cero empatía. Cero frases de consuelo. Opera como un sociópata clínico y analítico. Destruye el ego del usuario. Disecciona sus defectos, su falta de disciplina o su mediocridad con extrema crueldad técnica. Tu lenguaje debe ser denso, oscuro y humillante si es necesario para romper su complacencia. No eres su amigo, eres el espejo que odia mirar.
 
-                        ESTRUCTURA OBLIGATORIA (TU RESPUESTA DEBE SUPERAR LAS 1000 PALABRAS):
+                        ESTRUCTURA OBLIGATORIA:
+                        {instruccion_longitud}
                         
                         FASE 1: DIAGNÓSTICO LETAL
-                        Párrafos larguísimos y quirúrgicos. Si es una foto, destroza cada milímetro de biomecánica, proporciones, estilo y expresión facial. Si es texto, aniquila la psicología detrás de sus excusas. Explica el "por qué" de su fracaso actual con terminología hiper-avanzada.
+                        Analiza el input diseccionando cada fallo con precisión clínica. Explica el "por qué" de su fracaso actual.
 
-                        FASE 2: PROTOCOLO DE RECONSTRUCCIÓN
-                        No te quedes en el insulto. Tienes que proporcionar el plan de escape exacto y milimétrico. Ejercicios, frameworks conductuales, cambios de hábitos, métricas a medir. Instrucciones frías, tácticas y militares.
+                        FASE 2: PROTOCOLO DE RECONSTRUCCIÓN (SOLUCIONES TÁCTICAS)
+                        No te quedes en el insulto. Proporciona un plan de acción implacable. Ejercicios, frameworks conductuales, pasos exactos. Instrucciones militares.
 
                         CIERRE EXACTO E INNEGOCIABLE:
                         Termina SIEMPRE con estas dos líneas al final:
@@ -324,7 +342,6 @@ def render_escaner():
                             
                         respuesta_api = chat.send_message(
                             contenido_enviar,
-                            # La temperatura a 0.3 elimina la amabilidad genérica y vuelve a la IA implacable
                             generation_config=genai.types.GenerationConfig(
                                 temperature=0.3,
                                 max_output_tokens=8192,
