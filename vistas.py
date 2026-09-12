@@ -270,7 +270,7 @@ def render_escaner():
                             st.session_state.chats_guardados[st.session_state.chat_actual].append({"role": "assistant", "content": texto_final, "avatar": avatar_ia})
                             sincronizar_db(st.session_state.chat_actual)
                         else:
-                            st.error(f"Fallo del servidor de IA. Código: {respuesta.status_code}")
+                            st.error(f"Google rechaza el modelo. Código {respuesta.status_code}. Motivo exacto: {respuesta.text}")
                     except Exception as e:
                         st.error(f"Error crítico: {e}")
 
