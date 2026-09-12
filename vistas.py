@@ -273,9 +273,8 @@ def render_escaner():
                 with st.spinner("Calculando métricas REFLEX..."):
                     contents = []
                     meta = st.session_state.chat_meta.get(st.session_state.chat_actual, {})
-                    instruccion_sistema = f"Eres REFLEX AI. Rol: {meta.get('rol', 'juez')}. Brutalidad: {meta.get('brutalidad', 7)}/10. Tono: {meta.get('tono', 'Directo')}. OBLIGATORIO: Termina SIEMPRE con [ELO: X/10] y [METRICAS: Estructura=X, Detalles=X, Contexto=X, Impacto=X]."
                     
-                    contents.append({"role": "user", "parts": [{"text": instruccion_sistema}]})
+                    contents.append({"role": "user", "parts": [{"text": f"Eres REFLEX AI. Rol: {meta.get('rol', 'juez')}. Brutalidad: {meta.get('brutalidad', 7)}/10. Tono: {meta.get('tono', 'Directo')}. OBLIGATORIO: Termina SIEMPRE con [ELO: X/10] y [METRICAS: Estructura=X, Detalles=X, Contexto=X, Impacto=X]."}]})
                     contents.append({"role": "model", "parts": [{"text": "Entendido. Operaré estrictamente bajo estos parámetros exactos."}]})
 
                     for m in mensajes_actuales[:-1]:
@@ -286,10 +285,9 @@ def render_escaner():
                         partes_finales.append({"inline_data": {"mime_type": "image/jpeg", "data": base64.b64encode(evidencia_actual).decode('utf-8')}})
                     contents.append({"role": "user", "parts": partes_finales})
 
-              try:
+                    try:
                         GEMINI_KEY = os.environ.get("GEMINI_KEY") or st.secrets["GEMINI_KEY"]
                         payload = {
-                            "system_instruction": {"parts": [{"text": f"Eres REFLEX AI. Rol: {meta.get('rol', 'juez')}. Brutalidad: {meta.get('brutalidad', 7)}/10. Tono: {meta.get('tono', 'Directo')}. OBLIGATORIO: Termina SIEMPRE con [ELO: X/10] y [METRICAS: Estructura=X, Detalles=X, Contexto=X, Impacto=X]."}]},
                             "contents": contents,
                             "safetySettings": [
                                 {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
