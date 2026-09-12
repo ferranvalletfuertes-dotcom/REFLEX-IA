@@ -431,9 +431,25 @@ def render_escaner():
 
 
 
-                        # 1. Extraer configuración de la interfaz
+                      # --- 1. PREPARAR LA MEMORIA (CONTENTS) ---
+        contents = []
+        mensajes_actuales = st.session_state.chats_guardados[st.session_state.chat_actual]
+        
+        if len(mensajes_actuales) > 0:
+            for m in mensajes_actuales[:-1]:
+                contents.append({"role": "user" if m["role"] == "user" else "model", "parts": [{"text": m["content"]}]})
+                
+            partes_finales = [{"text": mensajes_actuales[-1]["content"]}]
+            
+            evidencia_actual = st.session_state.evidencias_guardadas.get(st.session_state.chat_actual)
+            if evidencia_actual is not None:
+                img_b64 = base64.b64encode(evidencia_actual).decode('utf-8')
+                partes_finales.append({"inline_data": {"mime_type": "image/jpeg", "data": img_b64}})
+                
+            contents.append({"role": "user", "parts": partes_finales})
+
+        # --- 2. EL NÚCLEO DE LA IA (TRY/EXCEPT BLINDADO) ---
         try:
-            # 1. Extracción de personalidad
             meta_actual = st.session_state.chat_meta.get(st.session_state.chat_actual, {})
             rol = meta_actual.get("rol", "un juez implacable")
             brutalidad = meta_actual.get("brutalidad", 7)
@@ -448,7 +464,6 @@ def render_escaner():
             - Si el nivel es 'Implacable (Técnico)': Usa vocabulario clínico, estructural y corporativo avanzado.
             """
             
-            # 2. El Payload original intacto
             payload = {
                 "system_instruction": {"parts": [{"text": instruccion_sistema}]},
                 "contents": contents,
@@ -460,7 +475,6 @@ def render_escaner():
                 ]
             }
 
-            # 3. Disparo a la API
             respuesta = requests.post(url_gen, headers={"Content-Type": "application/json"}, data=json.dumps(payload))
             datos = respuesta.json()
 
