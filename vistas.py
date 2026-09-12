@@ -280,7 +280,7 @@ def render_escaner():
                         system_prompt = f"Eres REFLEX AI. Rol: {meta.get('rol', 'juez')}. Brutalidad: {meta.get('brutalidad', 7)}/10. Tono: {meta.get('tono', 'Directo')}. OBLIGATORIO: Termina SIEMPRE con [ELO: X/10] y [METRICAS: Estructura=X, Detalles=X, Contexto=X, Impacto=X]."
                         
                         model = genai.GenerativeModel(
-                            model_name="gemini-2.5-flash",
+                            model_name="gemini-3.6-flash",
                             system_instruction=system_prompt
                         )
                         
