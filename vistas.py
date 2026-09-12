@@ -432,64 +432,54 @@ def render_escaner():
 
 
                         # 1. Extraer configuración de la interfaz
-        meta_actual = st.session_state.chat_meta.get(st.session_state.chat_actual, {})
-        rol = meta_actual.get("rol", "un juez implacable")
-        brutalidad = meta_actual.get("brutalidad", 7)
-        tono = meta_actual.get("tono", "Intermedio (Claro)")
+        try:
+            # 1. Extracción de personalidad
+            meta_actual = st.session_state.chat_meta.get(st.session_state.chat_actual, {})
+            rol = meta_actual.get("rol", "un juez implacable")
+            brutalidad = meta_actual.get("brutalidad", 7)
+            tono = meta_actual.get("tono", "Intermedio (Claro)")
 
-        # 2. Definir el comportamiento inquebrantable
-        instruccion_sistema = f"""
-        Eres REFLEX AI. Tu rol asignado es: {rol}.
-        Tu nivel de brutalidad analítica es {brutalidad}/10.
-        
-        REGLA DE LENGUAJE OBLIGATORIA (Nivel: {tono}):
-        - Si el nivel es 'Colega (Directo)': Habla de tú a tú, usa jerga cotidiana y sé muy directo, como un amigo duro pero leal.
-        - Si el nivel es 'Intermedio (Claro)': Lenguaje profesional pero accesible. Explica conceptos complejos de forma simple.
-        - Si el nivel es 'Implacable (Técnico)': Usa vocabulario clínico, estructural y corporativo avanzado. Cero empatía.
-        """
-                        contents = []
-                        for m in mensajes_actuales[:-1]:
-                            contents.append({"role": "user" if m["role"] == "user" else "model", "parts": [{"text": m["content"]}]})
-                        
-                        partes_finales = [{"text": mensajes_actuales[-1]["content"]}]
-                        if evidencia_actual is not None:
-                            img_b64 = base64.b64encode(evidencia_actual).decode('utf-8')
-                            partes_finales.append({"inline_data": {"mime_type": "image/jpeg", "data": img_b64}})
-                            
-                        contents.append({"role": "user", "parts": partes_finales})
-                        
-                        payload = {
-                            "system_instruction": {"parts": [{"text": instruccion_sistema}]},
-                            "contents": contents,
-                            "safetySettings": [
-                                {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-                                {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-                                {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-                                {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}
-                            ]
-                        }
+            instruccion_sistema = f"""
+            Eres REFLEX AI. Tu rol asignado es: {rol}.
+            Tu nivel de brutalidad analítica es {brutalidad}/10.
+            REGLA DE LENGUAJE OBLIGATORIA (Nivel: {tono}):
+            - Si el nivel es 'Colega (Directo)': Habla de tú a tú, usa jerga cotidiana y sé muy directo.
+            - Si el nivel es 'Intermedio (Claro)': Lenguaje profesional pero accesible.
+            - Si el nivel es 'Implacable (Técnico)': Usa vocabulario clínico, estructural y corporativo avanzado.
+            """
+            
+            # 2. El Payload original intacto
+            payload = {
+                "system_instruction": {"parts": [{"text": instruccion_sistema}]},
+                "contents": contents,
+                "safetySettings": [
+                    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+                    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+                    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+                    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}
+                ]
+            }
 
-                        respuesta = requests.post(url_gen, headers={"Content-Type": "application/json"}, data=json.dumps(payload))
-                        datos = respuesta.json()
-                        
-                        if respuesta.status_code == 200:
-                            texto_bruto = datos['candidates'][0]['content']['parts'][0]['text']
-                            
-                            def generador_stream(texto):
-                                for palabra in texto.split(" "):
-                                    yield palabra + " "
-                                    time.sleep(0.02)
-                                    
-                            texto_final = st.write_stream(generador_stream(texto_bruto))
-                            st.session_state.chats_guardados[st.session_state.chat_actual].append({"role": "assistant", "content": texto_final, "avatar": avatar_ia})
-                            sincronizar_db(st.session_state.chat_actual)
-                            st.rerun()
-                        else:
-                            msg_err = datos.get('error', {}).get('message', 'Desconocido')
-                            st.error(f"Error nativo de Google: {msg_err}")
-                            
-                    except Exception as e:
-                        st.error(f"Falla de red crítica: {e}")
+            # 3. Disparo a la API
+            respuesta = requests.post(url_gen, headers={"Content-Type": "application/json"}, data=json.dumps(payload))
+            datos = respuesta.json()
+
+            if respuesta.status_code == 200:
+                texto_bruto = datos['candidates'][0]['content']['parts'][0]['text']
+                
+                def generador_stream(texto):
+                    for palabra in texto.split(" "):
+                        yield palabra + " "
+                        time.sleep(0.02)
+                
+                texto_final = st.write_stream(generador_stream(texto_bruto))
+                st.session_state.chats_guardados[st.session_state.chat_actual].append({"role": "assistant", "content": texto_final, "avatar": avatar_ia})
+                sincronizar_db(st.session_state.chat_actual)
+            else:
+                st.error("La API de Google ha rechazado la conexión.")
+
+        except Exception as e:
+            st.error(f"Error crítico en la matriz de IA: {e}")
 # 5. Interfaz de Defensa y Subida Extra
         with st.popover("➕ Añadir nueva imagen", help="Sube más contexto visual"):
             nueva_foto = st.file_uploader("Adjuntar archivo extra", type=["jpg", "png", "jpeg"], key="foto_extra")
