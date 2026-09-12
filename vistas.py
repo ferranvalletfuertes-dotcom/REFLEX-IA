@@ -425,7 +425,7 @@ def render_escaner():
                # --- 2. EL NÚCLEO DE LA IA BLINDADO ---
                     try:
                         GEMINI_KEY = os.environ.get("GEMINI_KEY") or st.secrets["GEMINI_KEY"]
-                        url_gen = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_KEY}"
+                        url_gen = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={GEMINI_KEY}"
 
                         meta_actual = st.session_state.chat_meta.get(st.session_state.chat_actual, {})
                         rol = meta_actual.get("rol", "un juez implacable")
