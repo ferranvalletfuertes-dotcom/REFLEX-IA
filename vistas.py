@@ -285,32 +285,51 @@ def render_escaner():
                         partes_finales.append({"inline_data": {"mime_type": "image/jpeg", "data": base64.b64encode(evidencia_actual).decode('utf-8')}})
                     contents.append({"role": "user", "parts": partes_finales})
 
-                    try:
+             try:
+                        import google.generativeai as genai
                         GEMINI_KEY = os.environ.get("GEMINI_KEY") or st.secrets["GEMINI_KEY"]
-                        payload = {
-                            "contents": contents,
-                            "safetySettings": [
-                                {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-                                {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-                                {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-                                {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}
-                            ]
-                        }
                         
-                        url_api = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={GEMINI_KEY}"
-                        respuesta = requests.post(url_api, headers={"Content-Type": "application/json"}, data=json.dumps(payload))
-
-                        if respuesta.status_code == 200:
-                            texto_bruto = respuesta.json()['candidates'][0]['content']['parts'][0]['text']
-                            def generador(t):
-                                for p in t.split(" "): yield p + " "; time.sleep(0.01)
-                            texto_final = st.write_stream(generador(texto_bruto))
-                            st.session_state.chats_guardados[st.session_state.chat_actual].append({"role": "assistant", "content": texto_final, "avatar": avatar_ia})
-                            sincronizar_db(st.session_state.chat_actual)
+                        genai.configure(api_key=GEMINI_KEY)
+                        
+                        # Usamos el SDK oficial para evitar cualquier error de rutas o 404 de la API HTTP
+                        system_prompt = f"Eres REFLEX AI. Rol: {meta.get('rol', 'juez')}. Brutalidad: {meta.get('brutalidad', 7)}/10. Tono: {meta.get('tono', 'Directo')}. OBLIGATORIO: Termina SIEMPRE con [ELO: X/10] y [METRICAS: Estructura=X, Detalles=X, Contexto=X, Impacto=X]."
+                        
+                        model = genai.GenerativeModel(
+                            model_name="gemini-1.5-flash",
+                            system_instruction=system_prompt
+                        )
+                        
+                        # Preparamos el historial para el SDK
+                        historial_sdk = []
+                        for m in mensajes_actuales[:-1]:
+                            historial_sdk.append({
+                                "role": "user" if m["role"] == "user" else "model",
+                                "parts": [m["content"]]
+                            })
+                        
+                        chat = model.start_chat(history=historial_sdk)
+                        
+                        # Mensaje actual con soporte de imagen opcional
+                        mensaje_usuario = mensajes_actuales[-1]["content"]
+                        if evidencia_actual is not None:
+                            imagen_pil = Image.open(io.BytesIO(evidencia_actual))
+                            respuesta_api = chat.send_message([mensaje_usuario, imagen_pil])
                         else:
-                            st.error(f"Error de API (Código {respuesta.status_code}): {respuesta.text}")
+                            respuesta_api = chat.send_message(mensaje_usuario)
+
+                        texto_bruto = respuesta_api.text
+                        
+                        def generador(t):
+                            for p in t.split(" "): 
+                                yield p + " "
+                                time.sleep(0.01)
+                                
+                        texto_final = st.write_stream(generador(texto_bruto))
+                        st.session_state.chats_guardados[st.session_state.chat_actual].append({"role": "assistant", "content": texto_final, "avatar": avatar_ia})
+                        sincronizar_db(st.session_state.chat_actual)
+
                     except Exception as e:
-                        st.error(f"Error crítico en la matriz de IA: {e}")
+                        st.error(f"Error crítico en la matriz de IA con SDK oficial: {e}")
 
         with st.popover("➕ Añadir imagen"):
             nueva_foto = st.file_uploader("Adjuntar archivo extra", type=["jpg", "png", "jpeg"], key="foto_extra")
