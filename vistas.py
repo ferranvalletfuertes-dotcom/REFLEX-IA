@@ -286,7 +286,7 @@ def render_escaner():
                         partes_finales.append({"inline_data": {"mime_type": "image/jpeg", "data": base64.b64encode(evidencia_actual).decode('utf-8')}})
                     contents.append({"role": "user", "parts": partes_finales})
 
-                   try:
+              try:
                         GEMINI_KEY = os.environ.get("GEMINI_KEY") or st.secrets["GEMINI_KEY"]
                         payload = {
                             "system_instruction": {"parts": [{"text": f"Eres REFLEX AI. Rol: {meta.get('rol', 'juez')}. Brutalidad: {meta.get('brutalidad', 7)}/10. Tono: {meta.get('tono', 'Directo')}. OBLIGATORIO: Termina SIEMPRE con [ELO: X/10] y [METRICAS: Estructura=X, Detalles=X, Contexto=X, Impacto=X]."}]},
@@ -299,7 +299,6 @@ def render_escaner():
                             ]
                         }
                         
-                        # RUTA OFICIAL ESTABLE v1 (Cero errores 404)
                         url_api = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={GEMINI_KEY}"
                         respuesta = requests.post(url_api, headers={"Content-Type": "application/json"}, data=json.dumps(payload))
 
