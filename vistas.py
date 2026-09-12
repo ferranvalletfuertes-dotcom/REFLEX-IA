@@ -471,8 +471,8 @@ def render_escaner():
                             texto_final = st.write_stream(generador_stream(texto_bruto))
                             st.session_state.chats_guardados[st.session_state.chat_actual].append({"role": "assistant", "content": texto_final, "avatar": avatar_ia})
                             sincronizar_db(st.session_state.chat_actual)
-                        else:
-                            st.error(f"La API de Google ha rechazado la conexión. Código: {respuesta.status_code}")
+                    else:
+                st.error(f"Fallo crítico. Código: {respuesta.status_code}. Detalle: {respuesta.text}")
 
                     except Exception as e:
                         st.error(f"Error crítico en la matriz de IA: {e}")
