@@ -8,7 +8,8 @@ import json
 import re
 import time
 from gtts import gTTS
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 # ==========================================
 # 1. LANDING PAGE Y ACCESO (EMAIL / CONTRASEÑA)
@@ -273,33 +274,40 @@ def render_escaner():
                 with st.spinner("Calculando métricas REFLEX..."):
                     try:
                         GEMINI_KEY = os.environ.get("GEMINI_KEY") or st.secrets["GEMINI_KEY"]
-                        genai.configure(api_key=GEMINI_KEY)
+                        client = genai.Client(api_key=GEMINI_KEY)
                         
                         meta = st.session_state.chat_meta.get(st.session_state.chat_actual, {})
                         system_prompt = f"Eres REFLEX AI. Rol: {meta.get('rol', 'juez')}. Brutalidad: {meta.get('brutalidad', 7)}/10. Tono: {meta.get('tono', 'Directo')}. OBLIGATORIO: Termina SIEMPRE con [ELO: X/10] y [METRICAS: Estructura=X, Detalles=X, Contexto=X, Impacto=X]."
                         
-                        model = genai.GenerativeModel(
-                            model_name="gemini-1.5-flash",
-                            system_instruction=system_prompt
-                        )
-                        
-                        historial_sdk = []
+                        # Historial formateado para el SDK moderno
+                        contents_sdk = []
                         for m in mensajes_actuales[:-1]:
-                            historial_sdk.append({
-                                "role": "user" if m["role"] == "user" else "model",
-                                "parts": [m["content"]]
-                            })
+                            contents_sdk.append(types.Content(
+                                role="user" if m["role"] == "user" else "model",
+                                parts=[types.Part.from_text(text=m["content"])]
+                            ))
                         
-                        chat = model.start_chat(history=historial_sdk)
-                        
-                        mensaje_usuario = mensajes_actuales[-1]["content"]
+                        # Mensaje actual
+                        parts_actuales = [types.Part.from_text(text=mensajes_actuales[-1]["content"])]
                         if evidencia_actual is not None:
                             imagen_pil = Image.open(io.BytesIO(evidencia_actual))
-                            respuesta_api = chat.send_message([mensaje_usuario, imagen_pil])
-                        else:
-                            respuesta_api = chat.send_message(mensaje_usuario)
+                            # Convertimos imagen a bytes para el SDK moderno si es necesario
+                            buffered = io.BytesIO()
+                            imagen_pil.save(buffered, format="JPEG")
+                            parts_actuales.append(types.Part.from_bytes(data=buffered.getvalue(), mime_type="image/jpeg"))
+                        
+                        contents_sdk.append(types.Content(role="user", parts=parts_actuales))
 
-                        texto_bruto = respuesta_api.text
+                        response = client.models.generate_content(
+                            model='gemini-2.5-flash',
+                            contents=contents_sdk,
+                            config=types.GenerateContentConfig(
+                                system_instruction=system_prompt,
+                                temperature=0.7,
+                            ),
+                        )
+
+                        texto_bruto = response.text
                         
                         def generador(t):
                             for p in t.split(" "): 
@@ -311,7 +319,7 @@ def render_escaner():
                         sincronizar_db(st.session_state.chat_actual)
 
                     except Exception as e:
-                        st.error(f"Error crítico en la matriz de IA con SDK oficial: {e}")
+                        st.error(f"Error crítico en la matriz de IA con SDK unificado: {e}")
 
         with st.popover("➕ Añadir imagen"):
             nueva_foto = st.file_uploader("Adjuntar archivo extra", type=["jpg", "png", "jpeg"], key="foto_extra")
