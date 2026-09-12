@@ -290,12 +290,12 @@ def render_escaner():
                         GEMINI_KEY = os.environ.get("GEMINI_KEY") or st.secrets["GEMINI_KEY"]
                         payload = {"contents": contents, "safetySettings": [{"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"}, {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"}, {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"}, {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}]}
                         
-                        url_flash = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_KEY}"
+                        url_flash = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_KEY}"
                         respuesta = requests.post(url_flash, headers={"Content-Type": "application/json"}, data=json.dumps(payload))
                         
                         if respuesta.status_code == 404:
                             for c in contents: c["parts"] = [p for p in c["parts"] if "inline_data" not in p]
-                            url_pro = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key={GEMINI_KEY}"
+                            url_pro = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key={GEMINI_KEY}"
                             respuesta = requests.post(url_pro, headers={"Content-Type": "application/json"}, data=json.dumps(payload))
 
                         if respuesta.status_code == 200:
