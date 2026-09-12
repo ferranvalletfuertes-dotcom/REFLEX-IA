@@ -286,17 +286,22 @@ def render_escaner():
                         partes_finales.append({"inline_data": {"mime_type": "image/jpeg", "data": base64.b64encode(evidencia_actual).decode('utf-8')}})
                     contents.append({"role": "user", "parts": partes_finales})
 
-                    try:
+                   try:
                         GEMINI_KEY = os.environ.get("GEMINI_KEY") or st.secrets["GEMINI_KEY"]
-                        payload = {"contents": contents, "safetySettings": [{"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"}, {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"}, {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"}, {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}]}
+                        payload = {
+                            "system_instruction": {"parts": [{"text": f"Eres REFLEX AI. Rol: {meta.get('rol', 'juez')}. Brutalidad: {meta.get('brutalidad', 7)}/10. Tono: {meta.get('tono', 'Directo')}. OBLIGATORIO: Termina SIEMPRE con [ELO: X/10] y [METRICAS: Estructura=X, Detalles=X, Contexto=X, Impacto=X]."}]},
+                            "contents": contents,
+                            "safetySettings": [
+                                {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+                                {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+                                {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+                                {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}
+                            ]
+                        }
                         
-                        url_flash = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_KEY}"
-                        respuesta = requests.post(url_flash, headers={"Content-Type": "application/json"}, data=json.dumps(payload))
-                        
-                        if respuesta.status_code == 404:
-                            for c in contents: c["parts"] = [p for p in c["parts"] if "inline_data" not in p]
-                            url_pro = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro:generateContent?key={GEMINI_KEY}"
-                            respuesta = requests.post(url_pro, headers={"Content-Type": "application/json"}, data=json.dumps(payload))
+                        # RUTA OFICIAL ESTABLE v1 (Cero errores 404)
+                        url_api = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={GEMINI_KEY}"
+                        respuesta = requests.post(url_api, headers={"Content-Type": "application/json"}, data=json.dumps(payload))
 
                         if respuesta.status_code == 200:
                             texto_bruto = respuesta.json()['candidates'][0]['content']['parts'][0]['text']
@@ -306,7 +311,7 @@ def render_escaner():
                             st.session_state.chats_guardados[st.session_state.chat_actual].append({"role": "assistant", "content": texto_final, "avatar": avatar_ia})
                             sincronizar_db(st.session_state.chat_actual)
                         else:
-                            st.error(f"Google rechaza el modelo. Código {respuesta.status_code}. Motivo exacto: {respuesta.text}")
+                            st.error(f"Error de API (Código {respuesta.status_code}): {respuesta.text}")
                     except Exception as e:
                         st.error(f"Error crítico en la matriz de IA: {e}")
 
