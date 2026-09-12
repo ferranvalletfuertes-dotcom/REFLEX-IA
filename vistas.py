@@ -278,16 +278,16 @@ def render_escaner():
                         partes_finales.append({"inline_data": {"mime_type": "image/jpeg", "data": base64.b64encode(evidencia_actual).decode('utf-8')}})
                     contents.append({"role": "user", "parts": partes_finales})
 
-                    try:
+                  try:
                         GEMINI_KEY = os.environ.get("GEMINI_KEY") or st.secrets["GEMINI_KEY"]
                         payload = {"contents": contents, "safetySettings": [{"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"}, {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"}, {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"}, {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}]}
                         
-                        url_flash = f"[https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=](https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=){GEMINI_KEY}"
+                        url_flash = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_KEY}"
                         respuesta = requests.post(url_flash, headers={"Content-Type": "application/json"}, data=json.dumps(payload))
                         
                         if respuesta.status_code == 404:
                             for c in contents: c["parts"] = [p for p in c["parts"] if "inline_data" not in p]
-                           url_pro = f"[https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=](https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=){GEMINI_KEY}"
+                            url_pro = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key={GEMINI_KEY}"
                             respuesta = requests.post(url_pro, headers={"Content-Type": "application/json"}, data=json.dumps(payload))
 
                         if respuesta.status_code == 200:
@@ -300,7 +300,7 @@ def render_escaner():
                         else:
                             st.error(f"Google rechaza el modelo. Código {respuesta.status_code}. Motivo exacto: {respuesta.text}")
                     except Exception as e:
-                        st.error(f"Error crítico: {e}")
+                        st.error(f"Error crítico en la matriz de IA: {e}")
 
         with st.popover("➕ Añadir imagen"):
             nueva_foto = st.file_uploader("Adjuntar archivo extra", type=["jpg", "png", "jpeg"], key="foto_extra")
