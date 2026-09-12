@@ -422,10 +422,9 @@ def render_escaner():
                     
                     contents.append({"role": "user", "parts": partes_finales})
 
-                    # --- 2. EL NÚCLEO DE LA IA BLINDADO ---
+               # --- 2. EL NÚCLEO DE LA IA BLINDADO ---
                     try:
                         GEMINI_KEY = os.environ.get("GEMINI_KEY") or st.secrets["GEMINI_KEY"]
-                        # Usando el modelo veloz flash para que no colapse
                         url_gen = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_KEY}"
 
                         meta_actual = st.session_state.chat_meta.get(st.session_state.chat_actual, {})
@@ -458,9 +457,9 @@ def render_escaner():
                         }
 
                         respuesta = requests.post(url_gen, headers={"Content-Type": "application/json"}, data=json.dumps(payload))
-                        datos = respuesta.json()
-
+                        
                         if respuesta.status_code == 200:
+                            datos = respuesta.json()
                             texto_bruto = datos['candidates'][0]['content']['parts'][0]['text']
                             
                             def generador_stream(texto):
@@ -471,12 +470,11 @@ def render_escaner():
                             texto_final = st.write_stream(generador_stream(texto_bruto))
                             st.session_state.chats_guardados[st.session_state.chat_actual].append({"role": "assistant", "content": texto_final, "avatar": avatar_ia})
                             sincronizar_db(st.session_state.chat_actual)
-                    else:
-                st.error(f"Fallo crítico. Código: {respuesta.status_code}. Detalle: {respuesta.text}")
+                        else:
+                            st.error(f"Fallo crítico. Código: {respuesta.status_code}. Detalle: {respuesta.text}")
 
                     except Exception as e:
                         st.error(f"Error crítico en la matriz de IA: {e}")
-
         # 5. Interfaz de Defensa y Subida Extra
         with st.popover("➕ Añadir nueva imagen", help="Sube más contexto visual"):
             nueva_foto = st.file_uploader("Adjuntar archivo extra", type=["jpg", "png", "jpeg"], key="foto_extra")
