@@ -161,7 +161,7 @@ def render_escaner():
         st.session_state.evidencias_guardadas[chat_por_defecto] = None
         st.session_state.chat_actual = chat_por_defecto
 
-    svg_core = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="10" y="10" width="80" height="80" rx="24" fill="#0a0a0c" stroke="#25252b" stroke-width="4"/><path d="M25 50 H 75 M 50 25 V 75" stroke="#1f1f23" stroke-width="4" stroke-linecap="round"/><circle cx="50" cy="50" r="18" fill="#050505" stroke="#ffffff" stroke-width="6"/><circle cx="50" cy="50" r="6" fill="#ff2a2a"/></svg>"""
+   svg_core = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="120" fill="#0a0a0c" stroke="#1f1f23" stroke-width="8"/><path d="M256 116L377 186V326L256 396L135 326V186L256 116Z" fill="none" stroke="#16161d" stroke-width="24"/><path d="M256 166L334 211V301L256 346L178 301V211L256 166Z" fill="none" stroke="#ff2a2a" stroke-width="32" stroke-linejoin="round"/><path d="M256 216L290.6 236V276L256 296L221.4 276V236L256 216Z" fill="#ffffff"/><circle cx="256" cy="256" r="20" fill="#ff2a2a"/><line x1="256" y1="166" x2="256" y2="116" stroke="#ff2a2a" stroke-width="20" stroke-linecap="round"/><line x1="178" y1="301" x2="135" y2="326" stroke="#ff2a2a" stroke-width="20" stroke-linecap="round"/><line x1="334" y1="301" x2="377" y2="326" stroke="#ff2a2a" stroke-width="20" stroke-linecap="round"/></svg>"""
     avatar_ia = f"data:image/svg+xml;base64,{base64.b64encode(svg_core.encode('utf-8')).decode('utf-8')}"
 
     st.markdown("""
